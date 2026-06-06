@@ -1,0 +1,56 @@
+/* OurFinance Custom Styles */
+
+/* ============================================================
+   1. SAFE AREA PADDING (notch & gesture bar support)
+============================================================ */
+.pt-safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.pb-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ============================================================
+   2. APP-LIKE BEHAVIOR (disable scroll-bouncing / pull-to-refresh)
+============================================================ */
+html, body {
+  height: 100%;
+  overscroll-behavior-y: contain;
+}
+
+body {
+  /* Prevent default browser selection behaviors on click */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Custom scrollbars styling */
+main::-webkit-scrollbar {
+  width: 4px;
+}
+
+main::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+main::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.3); /* gray-400 with opacity */
+  border-radius: 9999px;
+}
+
+/* ============================================================
+   3. ANIMATIONS & MICRO-INTERACTIONS
+============================================================ */
+/* Active styling transitions for navigation and options */
+.tab-btn, .jenis-btn, .user-btn, button {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Safe focus state styles for accessibility */
+button:focus-visible, 
+input:focus-visible, 
+select:focus-visible, 
+textarea:focus-visible {
+  outline: 2px solid #34d399; /* primary-400 */
+  outline-offset: 2px;
+}

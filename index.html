@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#10b981" />
+  <meta name="description" content="Pencatatan keuangan untuk pasangan" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="OurFinance" />
+
+  <title>OurFinance</title>
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json" />
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50:  '#ecfdf5',
+              100: '#d1fae5',
+              200: '#a7f3d0',
+              300: '#6ee7b7',
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              800: '#065f46',
+              900: '#064e3b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col max-w-md mx-auto">
+
+  <!-- ============================================================
+       HEADER
+  ============================================================ -->
+  <header class="bg-primary-500 text-white px-4 pt-safe-top pb-3 shadow-md sticky top-0 z-10">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="text-2xl">💚</span>
+        <div>
+          <h1 class="text-lg font-bold leading-tight">OurFinance</h1>
+          <p class="text-primary-100 text-xs">Keuangan Bersama</p>
+        </div>
+      </div>
+      <!-- Tanggal hari ini -->
+      <div class="text-right">
+        <p id="header-date" class="text-primary-100 text-xs font-medium"></p>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============================================================
+       MAIN CONTENT AREA
+  ============================================================ -->
+  <main class="flex-1 overflow-y-auto pb-20">
+
+    <!-- ===========================================================
+         SECTION: DASHBOARD
+    =========================================================== -->
+    <section id="section-dashboard" class="px-4 py-5 space-y-4">
+
+      <!-- Section title -->
+      <div class="flex items-center justify-between">
+        <h2 class="text-base font-semibold text-gray-700">Ringkasan Keuangan</h2>
+        <button
+          onclick="loadDashboard()"
+          class="text-primary-500 text-sm flex items-center gap-1 hover:text-primary-700 transition-colors"
+          aria-label="Refresh data dashboard"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
+          Refresh
+        </button>
+      </div>
+
+      <!-- Widget: Saldo Efektif (featured, full-width) -->
+      <div id="widget-saldo" class="bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl p-5 text-white shadow-lg">
+        <div class="flex items-start justify-between">
+          <div>
+            <p class="text-primary-100 text-sm font-medium">Saldo Efektif</p>
+            <p class="text-3xl font-bold mt-1 tracking-tight" data-value="0">Rp –</p>
+            <p class="text-primary-200 text-xs mt-2">Pemasukan − Pengeluaran − Tabungan</p>
+          </div>
+          <div class="bg-white/20 rounded-xl p-2.5">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+              <line x1="2" y1="10" x2="22" y2="10"></line>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Widget row: Tabungan + Pengeluaran Bulan Ini -->
+      <div class="grid grid-cols-2 gap-3">
+
+        <!-- Widget: Total Tabungan -->
+        <div id="widget-tabungan" class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="bg-blue-100 rounded-lg p-1.5">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                <polyline points="7 3 7 8 15 8"></polyline>
+              </svg>
+            </div>
+            <span class="text-xs text-gray-500 font-medium">Total Tabungan</span>
+          </div>
+          <p class="text-lg font-bold text-gray-800 leading-tight" data-value="0">Rp –</p>
+          <p class="text-xs text-blue-500 mt-1">Semua jenis tabungan</p>
+        </div>
+
+        <!-- Widget: Pengeluaran Bulan Ini -->
+        <div id="widget-pengeluaran-bulan" class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="bg-red-100 rounded-lg p-1.5">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="1" x2="12" y2="23"></line>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+            </div>
+            <span class="text-xs text-gray-500 font-medium">Bulan Ini</span>
+          </div>
+          <p class="text-lg font-bold text-gray-800 leading-tight" data-value="0">Rp –</p>
+          <p class="text-xs text-red-400 mt-1">Pengeluaran berjalan</p>
+        </div>
+
+      </div>
+
+      <!-- Loading skeleton state for dashboard -->
+      <div id="dashboard-loading" class="hidden space-y-3">
+        <div class="animate-pulse bg-gray-200 rounded-2xl h-32"></div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="animate-pulse bg-gray-200 rounded-2xl h-24"></div>
+          <div class="animate-pulse bg-gray-200 rounded-2xl h-24"></div>
+        </div>
+      </div>
+
+      <!-- Quick action shortcut to form -->
+      <button
+        onclick="switchTab('form')"
+        class="w-full bg-primary-500 hover:bg-primary-600 active:bg-primary-700 text-white font-semibold py-3.5 rounded-2xl shadow-sm transition-colors flex items-center justify-center gap-2"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Catat Transaksi Baru
+      </button>
+
+    </section>
+
+    <!-- ===========================================================
+         SECTION: FORM TRANSAKSI
+    =========================================================== -->
+    <section id="section-form" class="hidden px-4 py-5">
+
+      <h2 class="text-base font-semibold text-gray-700 mb-4">Catat Transaksi</h2>
+
+      <form id="form-transaksi" novalidate class="space-y-5" autocomplete="off">
+
+        <!-- ── Nominal ── -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-2">
+          <label for="input-nominal" class="block text-sm font-semibold text-gray-700">
+            Nominal <span class="text-red-500">*</span>
+          </label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium text-sm pointer-events-none">Rp</span>
+            <input
+              type="text"
+              id="input-nominal"
+              inputmode="numeric"
+              placeholder="0"
+              data-raw-value=""
+              class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-lg font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent transition placeholder:text-gray-300"
+              aria-label="Nominal transaksi dalam Rupiah"
+              aria-required="true"
+            />
+          </div>
+        </div>
+
+        <!-- ── Jenis Transaksi ── -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-3">
+          <p class="text-sm font-semibold text-gray-700">
+            Jenis Transaksi <span class="text-red-500">*</span>
+          </p>
+          <div class="grid grid-cols-3 gap-2" role="group" aria-label="Pilih jenis transaksi">
+
+            <button
+              type="button"
+              id="btn-jenis-pemasukan"
+              data-jenis="Pemasukan"
+              class="jenis-btn flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 border-gray-200 text-gray-500 hover:border-primary-300 hover:bg-primary-50 transition-all text-xs font-semibold"
+              aria-pressed="false"
+            >
+              <span class="text-xl">💰</span>
+              <span>Pemasukan</span>
+            </button>
+
+            <button
+              type="button"
+              id="btn-jenis-pengeluaran"
+              data-jenis="Pengeluaran"
+              class="jenis-btn flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 border-gray-200 text-gray-500 hover:border-red-300 hover:bg-red-50 transition-all text-xs font-semibold"
+              aria-pressed="false"
+            >
+              <span class="text-xl">🛍️</span>
+              <span>Pengeluaran</span>
+            </button>
+
+            <button
+              type="button"
+              id="btn-jenis-tabungan"
+              data-jenis="Tabungan"
+              class="jenis-btn flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 border-gray-200 text-gray-500 hover:border-blue-300 hover:bg-blue-50 transition-all text-xs font-semibold"
+              aria-pressed="false"
+            >
+              <span class="text-xl">🏦</span>
+              <span>Tabungan</span>
+            </button>
+
+          </div>
+        </div>
+
+        <!-- ── Kategori ── -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-2">
+          <label for="select-kategori" class="block text-sm font-semibold text-gray-700">
+            Kategori <span class="text-red-500">*</span>
+          </label>
+          <div class="relative">
+            <select
+              id="select-kategori"
+              disabled
+              class="w-full py-3 pl-4 pr-10 border border-gray-200 rounded-xl text-sm text-gray-700 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent transition appearance-none disabled:opacity-60 disabled:cursor-not-allowed"
+              aria-label="Pilih kategori transaksi"
+              aria-required="true"
+            >
+              <option value="">— Pilih jenis transaksi dulu —</option>
+            </select>
+            <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Penginput ── -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-3">
+          <p class="text-sm font-semibold text-gray-700">
+            Dicatat oleh <span class="text-red-500">*</span>
+          </p>
+          <div class="grid grid-cols-2 gap-2" role="group" aria-label="Pilih penginput">
+
+            <button
+              type="button"
+              id="btn-user-a"
+              data-user="Ival"
+              class="user-btn flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 border-gray-200 text-gray-500 hover:border-primary-300 hover:bg-primary-50 transition-all text-sm font-semibold"
+              aria-pressed="false"
+            >
+              <span class="text-lg">👨‍💻</span>
+              <span>Ival</span>
+            </button>
+
+            <button
+              type="button"
+              id="btn-user-b"
+              data-user="Nurul"
+              class="user-btn flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 border-gray-200 text-gray-500 hover:border-primary-300 hover:bg-primary-50 transition-all text-sm font-semibold"
+              aria-pressed="false"
+            >
+              <span class="text-lg">👩‍💻</span>
+              <span>Nurul</span>
+            </button>
+
+          </div>
+        </div>
+
+        <!-- ── Catatan (opsional) ── -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-2">
+          <label for="input-catatan" class="block text-sm font-semibold text-gray-700">
+            Catatan
+            <span class="text-gray-400 font-normal ml-1">(opsional)</span>
+          </label>
+          <textarea
+            id="input-catatan"
+            rows="3"
+            placeholder="Tambahkan catatan untuk transaksi ini..."
+            class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent transition resize-none placeholder:text-gray-300"
+            aria-label="Catatan opsional untuk transaksi"
+          ></textarea>
+        </div>
+
+        <!-- ── Tombol Simpan ── -->
+        <button
+          type="submit"
+          id="btn-simpan"
+          class="w-full bg-primary-500 hover:bg-primary-600 active:bg-primary-700 text-white font-bold py-4 rounded-2xl shadow-sm transition-colors flex items-center justify-center gap-2 text-base"
+          aria-label="Simpan transaksi"
+        >
+          <!-- Spinner (hidden by default) -->
+          <svg
+            id="spinner-loading"
+            class="hidden w-5 h-5 animate-spin text-white"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+          <span id="btn-simpan-text">Simpan Transaksi</span>
+        </button>
+
+      </form>
+
+    </section>
+
+    <!-- ===========================================================
+         SECTION: HISTORY
+    =========================================================== -->
+    <section id="section-history" class="hidden px-4 py-5 space-y-4">
+
+      <div class="flex items-center justify-between">
+        <h2 class="text-base font-semibold text-gray-700">10 Transaksi Terakhir</h2>
+        <button
+          onclick="loadHistory()"
+          class="text-primary-500 text-sm flex items-center gap-1 hover:text-primary-700 transition-colors"
+          aria-label="Refresh data history"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
+          Refresh
+        </button>
+      </div>
+
+      <!-- Transaction list container -->
+      <ul
+        id="list-history"
+        class="space-y-3"
+        aria-label="Daftar transaksi terakhir"
+        aria-live="polite"
+      >
+        <!-- Items will be injected by app.js renderHistory() -->
+        <li class="text-center text-gray-400 text-sm py-10">
+          <div class="text-4xl mb-2">📋</div>
+          <p>Memuat riwayat transaksi...</p>
+        </li>
+      </ul>
+
+    </section>
+
+  </main>
+
+  <!-- ============================================================
+       BOTTOM TAB NAVIGATION
+  ============================================================ -->
+  <nav
+    class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white border-t border-gray-100 shadow-lg z-20"
+    role="navigation"
+    aria-label="Navigasi utama"
+  >
+    <div class="grid grid-cols-3 pb-safe-bottom">
+
+      <!-- Tab: Dashboard -->
+      <button
+        id="btn-tab-dashboard"
+        type="button"
+        onclick="switchTab('dashboard')"
+        class="tab-btn flex flex-col items-center justify-center gap-1 py-3 px-2 text-primary-500 transition-colors"
+        aria-label="Dashboard"
+        aria-selected="true"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+          <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+          <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+          <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+        </svg>
+        <span class="text-xs font-semibold">Dashboard</span>
+      </button>
+
+      <!-- Tab: Form Transaksi (center, slightly elevated) -->
+      <button
+        id="btn-tab-form"
+        type="button"
+        onclick="switchTab('form')"
+        class="tab-btn flex flex-col items-center justify-center gap-1 py-3 px-2 text-gray-400 transition-colors"
+        aria-label="Form Transaksi"
+        aria-selected="false"
+      >
+        <div class="bg-primary-500 rounded-full p-2 -mt-5 shadow-md mb-0.5">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </div>
+        <span class="text-xs font-semibold">Form</span>
+      </button>
+
+      <!-- Tab: History -->
+      <button
+        id="btn-tab-history"
+        type="button"
+        onclick="switchTab('history')"
+        class="tab-btn flex flex-col items-center justify-center gap-1 py-3 px-2 text-gray-400 transition-colors"
+        aria-label="History Transaksi"
+        aria-selected="false"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <polyline points="10 9 9 9 8 9"></polyline>
+        </svg>
+        <span class="text-xs font-semibold">History</span>
+      </button>
+
+    </div>
+  </nav>
+
+  <!-- ============================================================
+       TOAST NOTIFICATION CONTAINER
+       Positioned outside main sections, outside nav
+  ============================================================ -->
+  <div
+    id="toast-container"
+    class="fixed top-20 left-1/2 -translate-x-1/2 w-full max-w-sm px-4 z-50 space-y-2 pointer-events-none"
+    aria-live="assertive"
+    aria-atomic="true"
+    role="status"
+  >
+    <!-- Toast items are injected by app.js showToast() -->
+  </div>
+
+  <!-- ============================================================
+       SERVICE WORKER REGISTRATION
+  ============================================================ -->
+  <script>
+    // Set today's date in header
+    (function () {
+      const el = document.getElementById('header-date');
+      if (el) {
+        const now = new Date();
+        el.textContent = now.toLocaleDateString('id-ID', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric'
+        });
+      }
+    })();
+
+    // Register Service Worker from root
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js')
+          .then(function (reg) {
+            console.log('[SW] Registered at root, scope:', reg.scope);
+          })
+          .catch(function (err) {
+            console.warn('[SW] Registration failed:', err);
+          });
+      });
+    }
+  </script>
+
+  <!-- App entry point -->
+  <script src="js/app.js" defer></script>
+
+</body>
+</html>
