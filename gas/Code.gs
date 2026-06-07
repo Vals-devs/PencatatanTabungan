@@ -338,10 +338,10 @@ function setupSpreadsheet() {
   sheet.getRange("J4").setValue("Total Tabungan");
   sheet.getRange("J5").setValue("Saldo Efektif");
   
-  // Tulis rumus metrik keseluruhan di K2:K5 (menggunakan standar koma, otomatis dikoversi ke locale Sheets Anda)
-  sheet.getRange("K2").setFormula('=SUMIF(C:C, "Pemasukan", E:E)');
-  sheet.getRange("K3").setFormula('=SUMIF(C:C, "Pengeluaran", E:E)');
-  sheet.getRange("K4").setFormula('=SUMIF(C:C, "Tabungan", E:E)');
+  // Tulis rumus metrik keseluruhan di K2:K5 (menggunakan standar locale Indonesia dengan titik koma ';')
+  sheet.getRange("K2").setFormula('=SUMIF(C:C; "Pemasukan"; E:E)');
+  sheet.getRange("K3").setFormula('=SUMIF(C:C; "Pengeluaran"; E:E)');
+  sheet.getRange("K4").setFormula('=SUMIF(C:C; "Tabungan"; E:E)');
   sheet.getRange("K5").setFormula('=K2-K3-K4');
   
   // 3. Tulis Header Metrik Bulanan di M1:N1
@@ -354,9 +354,9 @@ function setupSpreadsheet() {
   sheet.getRange("M4").setValue("Tabungan Bulan Ini");
   
   // Tulis rumus metrik bulanan di N2:N4
-  sheet.getRange("N2").setFormula('=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A, 4, 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A, 4))=YEAR(TODAY())) * (C2:C="Pemasukan") * (E2:E))');
-  sheet.getRange("N3").setFormula('=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A, 4, 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A, 4))=YEAR(TODAY())) * (C2:C="Pengeluaran") * (E2:E))');
-  sheet.getRange("N4").setFormula('=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A, 4, 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A, 4))=YEAR(TODAY())) * (C2:C="Tabungan") * (E2:E))');
+  sheet.getRange("N2").setFormula('=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A; 4; 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A; 4))=YEAR(TODAY())) * (C2:C="Pemasukan") * (E2:E))');
+  sheet.getRange("N3").setFormula('=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A; 4; 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A; 4))=YEAR(TODAY())) * (C2:C="Pengeluaran") * (E2:E))');
+  sheet.getRange("N4").setFormula('=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A; 4; 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A; 4))=YEAR(TODAY())) * (C2:C="Tabungan") * (E2:E))');
   
   // Atur format nominal agar mudah dibaca di Sheet (K2:K5 dan N2:N4) sebagai Rupiah
   sheet.getRange("K2:K5").setNumberFormat('"Rp"#,##0');
