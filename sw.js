@@ -7,7 +7,7 @@
  *  3. Navigasi Halaman -> Cache First, fallback ke offline.html jika koneksi terputus
  */
 
-const CACHE_NAME = "ourfinance-v1";
+const CACHE_NAME = "ourfinance-v3";
 
 // Daftar aset statis yang akan di-pre-cache
 const STATIC_ASSETS = [
