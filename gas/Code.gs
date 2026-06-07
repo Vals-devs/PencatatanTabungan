@@ -201,9 +201,9 @@ function getDashboardData() {
   var sisaSaldo        = Number(sheet.getRange("K5").getValue()) || 0;
   
   // Membaca nilai dari sel rumus metrik bulan ini di kolom N
-  var pemasukanBulanIni   = Number(sheet.getRange("N1").getValue()) || 0;
-  var pengeluaranBulanIni = Number(sheet.getRange("N2").getValue()) || 0;
-  var tabunganBulanIni    = Number(sheet.getRange("N3").getValue()) || 0;
+  var pemasukanBulanIni   = Number(sheet.getRange("N2").getValue()) || 0;
+  var pengeluaranBulanIni = Number(sheet.getRange("N3").getValue()) || 0;
+  var tabunganBulanIni    = Number(sheet.getRange("N4").getValue()) || 0;
   
   return {
     totalPemasukan: totalPemasukan,
