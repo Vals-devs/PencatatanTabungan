@@ -2,7 +2,7 @@
   "name": "OurFinance",
   "short_name": "OurFinance",
   "description": "Pencatatan keuangan untuk pasangan",
-  "start_url": "/",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#10b981",
