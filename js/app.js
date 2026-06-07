@@ -502,6 +502,19 @@ function renderDashboard(data) {
   updateWidget("widget-tabungan", data.totalTabungan);
   updateWidget("widget-pengeluaran-bulan", data.pengeluaranBulanIni);
 
+  // Update metrik pemasukan personal
+  const personalPemasukanWidget = document.getElementById("widget-pemasukan-personal");
+  if (personalPemasukanWidget) {
+    const ivalEl = personalPemasukanWidget.querySelector("[data-value-ival]");
+    const nurulEl = personalPemasukanWidget.querySelector("[data-value-nurul]");
+    if (ivalEl) {
+      ivalEl.textContent = formatRupiah(data.pemasukanIvalBulanIni ?? 0);
+    }
+    if (nurulEl) {
+      nurulEl.textContent = formatRupiah(data.pemasukanNurulBulanIni ?? 0);
+    }
+  }
+
   // Update metrik pengeluaran personal
   const personalWidget = document.getElementById("widget-pengeluaran-personal");
   if (personalWidget) {

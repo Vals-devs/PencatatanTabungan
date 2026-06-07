@@ -206,6 +206,8 @@ function getDashboardData() {
   var tabunganBulanIni    = Number(sheet.getRange("N4").getValue()) || 0;
   var pengeluaranIvalBulanIni  = Number(sheet.getRange("N5").getValue()) || 0;
   var pengeluaranNurulBulanIni = Number(sheet.getRange("N6").getValue()) || 0;
+  var pemasukanIvalBulanIni    = Number(sheet.getRange("N7").getValue()) || 0;
+  var pemasukanNurulBulanIni   = Number(sheet.getRange("N8").getValue()) || 0;
   
   return {
     totalPemasukan: totalPemasukan,
@@ -216,7 +218,9 @@ function getDashboardData() {
     pengeluaranBulanIni: pengeluaranBulanIni,
     tabunganBulanIni: tabunganBulanIni,
     pengeluaranIvalBulanIni: pengeluaranIvalBulanIni,
-    pengeluaranNurulBulanIni: pengeluaranNurulBulanIni
+    pengeluaranNurulBulanIni: pengeluaranNurulBulanIni,
+    pemasukanIvalBulanIni: pemasukanIvalBulanIni,
+    pemasukanNurulBulanIni: pemasukanNurulBulanIni
   };
 }
 
@@ -357,23 +361,27 @@ function setupSpreadsheet() {
   sheet.getRange("M1").setValue("METRIK BULAN INI").setFontWeight("bold");
   sheet.getRange("N1").setValue("Nilai").setFontWeight("bold");
   
-  // Tulis label metrik bulanan di M2:M6
+  // Tulis label metrik bulanan di M2:M8
   sheet.getRange("M2").setValue("Pemasukan Bulan Ini");
   sheet.getRange("M3").setValue("Pengeluaran Bulan Ini");
   sheet.getRange("M4").setValue("Tabungan Bulan Ini");
   sheet.getRange("M5").setValue("Pengeluaran Ival Bulan Ini");
   sheet.getRange("M6").setValue("Pengeluaran Nurul Bulan Ini");
+  sheet.getRange("M7").setValue("Pemasukan Ival Bulan Ini");
+  sheet.getRange("M8").setValue("Pemasukan Nurul Bulan Ini");
   
-  // Tulis rumus metrik bulanan di N2:N6
+  // Tulis rumus metrik bulanan di N2:N8
   sheet.getRange("N2").setFormula('=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A; 4; 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A; 4))=YEAR(TODAY())) * (C2:C="Pemasukan") * (E2:E))');
   sheet.getRange("N3").setFormula('=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A; 4; 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A; 4))=YEAR(TODAY())) * (C2:C="Pengeluaran") * (E2:E))');
   sheet.getRange("N4").setFormula('=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A; 4; 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A; 4))=YEAR(TODAY())) * (C2:C="Tabungan") * (E2:E))');
   sheet.getRange("N5").setFormula('=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A; 4; 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A; 4))=YEAR(TODAY())) * (C2:C="Pengeluaran") * (B2:B="Ival") * (E2:E))');
   sheet.getRange("N6").setFormula('=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A; 4; 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A; 4))=YEAR(TODAY())) * (C2:C="Pengeluaran") * (B2:B="Nurul") * (E2:E))');
+  sheet.getRange("N7").setFormula('=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A; 4; 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A; 4))=YEAR(TODAY())) * (C2:C="Pemasukan") * (B2:B="Ival") * (E2:E))');
+  sheet.getRange("N8").setFormula('=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A; 4; 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A; 4))=YEAR(TODAY())) * (C2:C="Pemasukan") * (B2:B="Nurul") * (E2:E))');
   
-  // Atur format nominal agar mudah dibaca di Sheet (K2:K5 dan N2:N6) sebagai Rupiah
+  // Atur format nominal agar mudah dibaca di Sheet (K2:K5 dan N2:N8) sebagai Rupiah
   sheet.getRange("K2:K5").setNumberFormat('"Rp"#,##0');
-  sheet.getRange("N2:N6").setNumberFormat('"Rp"#,##0');
+  sheet.getRange("N2:N8").setNumberFormat('"Rp"#,##0');
   
   // Auto-fit kolom agar pas dengan teks
   sheet.autoResizeColumns(1, 8);
