@@ -501,6 +501,19 @@ function renderDashboard(data) {
   updateWidget("widget-saldo", data.saldoEfektif);
   updateWidget("widget-tabungan", data.totalTabungan);
   updateWidget("widget-pengeluaran-bulan", data.pengeluaranBulanIni);
+
+  // Update metrik pengeluaran personal
+  const personalWidget = document.getElementById("widget-pengeluaran-personal");
+  if (personalWidget) {
+    const ivalEl = personalWidget.querySelector("[data-value-ival]");
+    const nurulEl = personalWidget.querySelector("[data-value-nurul]");
+    if (ivalEl) {
+      ivalEl.textContent = formatRupiah(data.pengeluaranIvalBulanIni ?? 0);
+    }
+    if (nurulEl) {
+      nurulEl.textContent = formatRupiah(data.pengeluaranNurulBulanIni ?? 0);
+    }
+  }
 }
 
 // ============================================================
