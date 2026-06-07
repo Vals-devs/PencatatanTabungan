@@ -178,8 +178,9 @@ function deleteTransaction(payload) {
     const matchKeterangan = (String(row[5]) === payload.keterangan);
     
     if (matchTanggal && matchNama && matchJenis && matchKategori && matchNominal && matchKeterangan) {
-      // Indeks baris di sheet = i + 2 (karena values mulai dari baris 2, index i 0-based)
-      sheet.deleteRow(i + 2);
+      // Hapus hanya sel pada kolom A sampai H di baris tersebut dan geser ke atas
+      // Ini mencegah agar rumus-rumus metrik di kolom J-N tidak ikut terhapus
+      sheet.getRange(i + 2, 1, 1, 8).deleteCells(SpreadsheetApp.Dimension.ROWS);
       return { success: true, message: "Transaksi berhasil dihapus dari Sheets!" };
     }
   }
