@@ -9,11 +9,12 @@ Aplikasi ini menggunakan arsitektur **Serverless** gratis memanfaatkan ekosistem
 ## 🚀 Fitur Utama
 
 * **Dashboard Finansial Real-time**: Menampilkan akumulasi Saldo Efektif, Total Tabungan, dan Pengeluaran berjalan bulan ini secara instan.
+* **Breakdown Finansial Personal (Bulanan)**: Menampilkan rincian terpisah secara visual untuk **Pemasukan** dan **Pengeluaran** yang dilakukan oleh **Ival** dan **Nurul** masing-masing pada bulan berjalan secara real-time.
 * **Formulir Input Dinamis**:
   * *Currency Masking*: Format nominal Rupiah secara otomatis saat mengetik (`Rp 150.000`).
   * *Dynamic Category Dropdown*: Pilihan kategori berubah secara otomatis berdasarkan jenis transaksi (Pemasukan, Pengeluaran, atau Tabungan) yang dipilih.
   * *User Toggle*: Memilih penginput transaksi secara instan (👨‍💻 **Ival** atau 👩‍💻 **Nurul**).
-* **Riwayat Transaksi (History)**: Menampilkan 10 transaksi terakhir secara kronologis terbalik lengkap dengan badge warna (hijau untuk pemasukan/tabungan, merah untuk pengeluaran).
+* **Riwayat Transaksi (History) dengan Fitur Hapus**: Menampilkan 10 transaksi terakhir secara kronologis terbalik, lengkap dengan badge warna dan tombol hapus (ikon tempat sampah) untuk menghapus transaksi dari database Sheets tanpa merusak sel rumus.
 * **PWA & Offline Support**:
   * Dapat di-install di Android & iOS (*Add to Home Screen*) dengan splash screen dan icon custom.
   * Dilengkapi strategi caching *Cache First* (Service Worker) dan halaman *Offline Fallback* (`offline.html`) yang anggun saat internet terputus.
@@ -61,9 +62,21 @@ Aplikasi Statis   ==( Fetch API )==>   Google Apps Script  <========>  Google Sh
   `=K2-K3-K4`
 
 #### Metrik Bulanan (Kolom N)
-* **N1** (Pemasukan Bulan Ini)
-* **N2** (Pengeluaran Bulan Ini)
-* **N3** (Tabungan Bulan Ini)
+Semua rumus berikut menggunakan standar regional Indonesia dengan pemisah titik koma (`;`). Jika Google Sheets Anda disetel ke regional Amerika/English, ganti `;` menjadi koma `,`.
+* **N2** (Pemasukan Bulan Ini):  
+  `=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A; 4; 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A; 4))=YEAR(TODAY())) * (C2:C="Pemasukan") * (E2:E))`
+* **N3** (Pengeluaran Bulan Ini):  
+  `=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A; 4; 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A; 4))=YEAR(TODAY())) * (C2:C="Pengeluaran") * (E2:E))`
+* **N4** (Tabungan Bulan Ini):  
+  `=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A; 4; 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A; 4))=YEAR(TODAY())) * (C2:C="Tabungan") * (E2:E))`
+* **N5** (Pengeluaran Ival Bulan Ini):  
+  `=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A; 4; 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A; 4))=YEAR(TODAY())) * (C2:C="Pengeluaran") * (B2:B="Ival") * (E2:E))`
+* **N6** (Pengeluaran Nurul Bulan Ini):  
+  `=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A; 4; 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A; 4))=YEAR(TODAY())) * (C2:C="Pengeluaran") * (B2:B="Nurul") * (E2:E))`
+* **N7** (Pemasukan Ival Bulan Ini):  
+  `=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A; 4; 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A; 4))=YEAR(TODAY())) * (C2:C="Pemasukan") * (B2:B="Ival") * (E2:E))`
+* **N8** (Pemasukan Nurul Bulan Ini):  
+  `=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A; 4; 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A; 4))=YEAR(TODAY())) * (C2:C="Pemasukan") * (B2:B="Nurul") * (E2:E))`
 
 ---
 
