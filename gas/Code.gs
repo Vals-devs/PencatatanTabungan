@@ -126,8 +126,9 @@ function doPost(e) {
     var metode      = data.metode || "";
     var status      = data.status || "Selesai"; 
     
-    // Memasukkan data ke baris paling bawah secara berurutan (Kolom A sampai H)
-    sheet.appendRow([tanggal, nama, jenis, kategori, nominal, keterangan, metode, status]);
+    // Cari baris kosong pertama di kolom A-H agar tidak menabrak sel rumus di sebelah kanan
+    var nextRow = getNextTransactionRow(sheet);
+    sheet.getRange(nextRow, 1, 1, 8).setValues([[tanggal, nama, jenis, kategori, nominal, keterangan, metode, status]]);
     
     return createJsonResponse({ 
       status: "sukses", 
@@ -391,3 +392,17 @@ function setupSpreadsheet() {
   
   SpreadsheetApp.getUi().alert("Setup Selesai! Rumus, header, dan label metrik telah otomatis ditulis ke Google Sheets Anda.");
 }
+
+/**
+ * Mencari baris kosong pertama khusus untuk kolom A-H (tabel transaksi)
+ */
+function getNextTransactionRow(sheet) {
+  var values = sheet.getRange("A:A").getValues();
+  for (var i = 1; i < values.length; i++) {
+    if (values[i][0] === "" || values[i][0] === null || values[i][0] === undefined) {
+      return i + 1;
+    }
+  }
+  return values.length + 1;
+}
+
