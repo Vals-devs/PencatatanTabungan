@@ -295,3 +295,77 @@ function createJsonResponse(data) {
   return ContentService.createTextOutput(jsonString)
     .setMimeType(ContentService.MimeType.JSON);
 }
+
+/**
+ * Membuat menu kustom di Google Sheets saat dokumen dibuka.
+ * Menu ini memudahkan Anda melakukan setup struktur kolom dan rumus secara otomatis.
+ */
+function onOpen() {
+  const ui = SpreadsheetApp.getUi();
+  ui.createMenu("OurFinance")
+    .addItem("Setup Spreadsheet (Rumus & Header)", "setupSpreadsheet")
+    .addToUi();
+}
+
+/**
+ * Menyiapkan struktur header, label, dan rumus formula secara otomatis di Google Sheets.
+ */
+function setupSpreadsheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheets()[0];
+  
+  // 1. Tulis Header Transaksi di A1:H1
+  const headers = [
+    "Tanggal", 
+    "Nama", 
+    "Jenis Transaksi", 
+    "Kategori", 
+    "Nominal", 
+    "Keterangan", 
+    "Metode Pembayaran", 
+    "Status"
+  ];
+  sheet.getRange("A1:H1").setValues([headers]);
+  sheet.getRange("A1:H1").setFontWeight("bold").setBackground("#ecfdf5").setHorizontalAlignment("center");
+  
+  // 2. Tulis Header Metrik Keseluruhan di J1:K1
+  sheet.getRange("J1").setValue("METRIK KESELURUHAN").setFontWeight("bold");
+  sheet.getRange("K1").setValue("Nilai").setFontWeight("bold");
+  
+  // Tulis label metrik keseluruhan di J2:J5
+  sheet.getRange("J2").setValue("Total Pemasukan");
+  sheet.getRange("J3").setValue("Total Pengeluaran");
+  sheet.getRange("J4").setValue("Total Tabungan");
+  sheet.getRange("J5").setValue("Saldo Efektif");
+  
+  // Tulis rumus metrik keseluruhan di K2:K5 (menggunakan standar koma, otomatis dikoversi ke locale Sheets Anda)
+  sheet.getRange("K2").setFormula('=SUMIF(C:C, "Pemasukan", E:E)');
+  sheet.getRange("K3").setFormula('=SUMIF(C:C, "Pengeluaran", E:E)');
+  sheet.getRange("K4").setFormula('=SUMIF(C:C, "Tabungan", E:E)');
+  sheet.getRange("K5").setFormula('=K2-K3-K4');
+  
+  // 3. Tulis Header Metrik Bulanan di M1:N1
+  sheet.getRange("M1").setValue("METRIK BULAN INI").setFontWeight("bold");
+  sheet.getRange("N1").setValue("Nilai").setFontWeight("bold");
+  
+  // Tulis label metrik bulanan di M2:M4
+  sheet.getRange("M2").setValue("Pemasukan Bulan Ini");
+  sheet.getRange("M3").setValue("Pengeluaran Bulan Ini");
+  sheet.getRange("M4").setValue("Tabungan Bulan Ini");
+  
+  // Tulis rumus metrik bulanan di N2:N4
+  sheet.getRange("N2").setFormula('=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A, 4, 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A, 4))=YEAR(TODAY())) * (C2:C="Pemasukan") * (E2:E))');
+  sheet.getRange("N3").setFormula('=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A, 4, 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A, 4))=YEAR(TODAY())) * (C2:C="Pengeluaran") * (E2:E))');
+  sheet.getRange("N4").setFormula('=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A, 4, 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A, 4))=YEAR(TODAY())) * (C2:C="Tabungan") * (E2:E))');
+  
+  // Atur format nominal agar mudah dibaca di Sheet (K2:K5 dan N2:N4) sebagai Rupiah
+  sheet.getRange("K2:K5").setNumberFormat('"Rp"#,##0');
+  sheet.getRange("N2:N4").setNumberFormat('"Rp"#,##0');
+  
+  // Auto-fit kolom agar pas dengan teks
+  sheet.autoResizeColumns(1, 8);
+  sheet.autoResizeColumns(10, 2);
+  sheet.autoResizeColumns(13, 2);
+  
+  SpreadsheetApp.getUi().alert("Setup Selesai! Rumus, header, dan label metrik telah otomatis ditulis ke Google Sheets Anda.");
+}
