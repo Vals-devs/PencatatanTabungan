@@ -239,6 +239,11 @@ function getLastTransactions(n = 10) {
   for (let i = values.length - 1; i >= 0; i--) {
     const row = values[i];
     
+    // Lewati baris jika Nama (Kolom B) dan Jenis Transaksi (Kolom C) kosong
+    if (!row[1] && !row[2]) {
+      continue;
+    }
+    
     // Konversi objek Tanggal ke format DD/MM/YYYY agar seragam
     let tglStr = "";
     if (row[0]) {
