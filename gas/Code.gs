@@ -1,7 +1,7 @@
 /**
- * @fileoverview OurFinance — Google Apps Script (GAS) API Jembatan (Disesuaikan untuk Ival & Nurul)
+ * @fileoverview OurFinance — Google Apps Script (GAS) API Jembatan (Disesuaikan untuk Ival & Nurul + Pencatatan Uang Pribadi Single-Tab)
  * 
- * Kolom Transaksi (Sheet pertama):
+ * Kolom Transaksi (Sheet pertama / Utama):
  * A: Tanggal | B: Nama | C: Jenis Transaksi | D: Kategori | E: Nominal | F: Keterangan | G: Metode Pembayaran | H: Status
  * 
  * Metrik Dashboard:
@@ -28,15 +28,15 @@ function getSpreadsheet() {
 
 /**
  * Handler utama untuk request HTTP GET.
- * Merouting data berdasarkan query parameter 'action'.
- * Jika action kosong, otomatis mengembalikan data dashboard agar kompatibel.
+ * Merouting data berdasarkan query parameter 'action' & 'isPersonal'.
  */
 function doGet(e) {
   try {
     const action = e.parameter ? e.parameter.action : "";
+    const isPersonal = e.parameter ? (e.parameter.isPersonal === "true") : false;
     
     if (!action || action === "getDashboard") {
-      const data = getDashboardData();
+      const data = isPersonal ? getPersonalDashboardData() : getDashboardData();
       return createJsonResponse({ 
         status: "sukses", 
         message: "OK", 
@@ -45,7 +45,7 @@ function doGet(e) {
     } 
     
     if (action === "getHistory") {
-      const data = getLastTransactions(10);
+      const data = isPersonal ? getPersonalTransactions(10) : getLastTransactions(10);
       return createJsonResponse({ 
         status: "sukses", 
         message: "OK", 
@@ -68,7 +68,7 @@ function doGet(e) {
 
 /**
  * Handler utama untuk request HTTP POST.
- * Menerima payload JSON transaksi baru, melakukan validasi, lalu menambahkannya ke tab Transaksi.
+ * Menerima payload JSON transaksi baru, melakukan validasi, lalu menambahkannya ke tab Utama (index 0).
  */
 function doPost(e) {
   try {
@@ -115,7 +115,7 @@ function doPost(e) {
     }
 
     var ss = getSpreadsheet();
-    var sheet = ss.getSheets()[0]; 
+    var sheet = ss.getSheets()[0]; // Selalu tulis ke tab pertama (Utama)
     
     var tanggal     = data.tanggal || new Date(); 
     var nama        = data.nama;        
@@ -144,7 +144,7 @@ function doPost(e) {
 }
 
 /**
- * Menghapus baris transaksi yang cocok dari sheet.
+ * Menghapus baris transaksi yang cocok dari sheet Utama.
  */
 function deleteTransaction(payload) {
   const ss = getSpreadsheet();
@@ -152,6 +152,11 @@ function deleteTransaction(payload) {
   const lastRow = sheet.getLastRow();
   if (lastRow <= 1) {
     return { success: false, message: "Sheet transaksi kosong." };
+  }
+
+  // Safety check: Jika request dari personal app, cegah menghapus transaksi bersama
+  if (payload.isPersonal && payload.nama !== "Ival (Pribadi)") {
+    return { success: false, message: "Keamanan: Transaksi Bersama tidak dapat dihapus dari Aplikasi Pribadi." };
   }
   
   // Ambil data dari baris 2 (kolom A sampai F)
@@ -179,8 +184,6 @@ function deleteTransaction(payload) {
     const matchKeterangan = (String(row[5]) === payload.keterangan);
     
     if (matchTanggal && matchNama && matchJenis && matchKategori && matchNominal && matchKeterangan) {
-      // Hapus hanya sel pada kolom A sampai H di baris tersebut dan geser ke atas
-      // Ini mencegah agar rumus-rumus metrik di kolom J-N tidak ikut terhapus
       sheet.getRange(i + 2, 1, 1, 8).deleteCells(SpreadsheetApp.Dimension.ROWS);
       return { success: true, message: "Transaksi berhasil dihapus dari Sheets!" };
     }
@@ -190,13 +193,13 @@ function deleteTransaction(payload) {
 }
 
 /**
- * Membaca nilai metrik dashboard dari spreadsheet.
+ * Membaca nilai metrik dashboard bersama dari spreadsheet (eksklusif Ival (Pribadi)).
  */
 function getDashboardData() {
   const ss = getSpreadsheet();
   const sheet = ss.getSheets()[0];
   
-  // Membaca nilai dari sel rumus di kolom K (Metrik Keseluruhan)
+  // Membaca nilai dari sel rumus di kolom K
   var totalPemasukan   = Number(sheet.getRange("K2").getValue()) || 0;
   var totalPengeluaran = Number(sheet.getRange("K3").getValue()) || 0;
   var totalTabungan    = Number(sheet.getRange("K4").getValue()) || 0;
@@ -215,7 +218,7 @@ function getDashboardData() {
     totalPemasukan: totalPemasukan,
     totalPengeluaran: totalPengeluaran,
     totalTabungan: totalTabungan,
-    saldoEfektif: sisaSaldo, // sisaSaldo dipetakan ke saldoEfektif agar dibaca oleh frontend
+    saldoEfektif: sisaSaldo, 
     pemasukanBulanIni: pemasukanBulanIni,
     pengeluaranBulanIni: pengeluaranBulanIni,
     tabunganBulanIni: tabunganBulanIni,
@@ -227,38 +230,119 @@ function getDashboardData() {
 }
 
 /**
- * Mengambil 10 transaksi terakhir dari sheet.
+ * Menghitung nilai metrik dashboard pribadi secara pemrograman.
+ * Memuat data Ival (Shared) + Ival (Pribadi), dan mengeksklusi Tabungan Bersama.
  */
-function getLastTransactions(n = 10) {
+function getPersonalDashboardData() {
   const ss = getSpreadsheet();
   const sheet = ss.getSheets()[0];
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) {
+    return {
+      totalPemasukan: 0,
+      totalPengeluaran: 0,
+      totalTabungan: 0,
+      saldoEfektif: 0,
+      pemasukanBulanIni: 0,
+      pengeluaranBulanIni: 0,
+      tabunganBulanIni: 0
+    };
+  }
+
+  const values = sheet.getRange(2, 1, lastRow - 1, 6).getValues(); // A to F
   
+  let totalPemasukan = 0;
+  let totalPengeluaran = 0;
+  let totalTabungan = 0;
+  
+  let pemasukanBulanIni = 0;
+  let pengeluaranBulanIni = 0;
+  let tabunganBulanIni = 0;
+  
+  const today = new Date();
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+
+  for (let i = 0; i < values.length; i++) {
+    const row = values[i];
+    const nama = String(row[1]);
+    const jenis = String(row[2]);
+    const nominal = Number(row[4]) || 0;
+    
+    const isIvalShared = (nama === "Ival");
+    const isIvalPersonal = (nama === "Ival (Pribadi)");
+    
+    if (!isIvalShared && !isIvalPersonal) {
+      continue;
+    }
+    
+    let dateObj = null;
+    if (row[0] instanceof Date) {
+      dateObj = row[0];
+    } else {
+      dateObj = parseDateStr(String(row[0]));
+    }
+    
+    const isThisMonth = dateObj && (dateObj.getMonth() === currentMonth) && (dateObj.getFullYear() === currentYear);
+
+    if (jenis === "Pemasukan") {
+      totalPemasukan += nominal;
+      if (isThisMonth) pemasukanBulanIni += nominal;
+    } else if (jenis === "Pengeluaran") {
+      totalPengeluaran += nominal;
+      if (isThisMonth) pengeluaranBulanIni += nominal;
+    } else if (jenis === "Tabungan") {
+      // Hanya tabungan pribadi yang masuk ke perhitungan personal, tabungan bersama dilewati
+      if (isIvalPersonal) {
+        totalTabungan += nominal;
+        if (isThisMonth) tabunganBulanIni += nominal;
+      }
+    }
+  }
+
+  return {
+    totalPemasukan: totalPemasukan,
+    totalPengeluaran: totalPengeluaran,
+    totalTabungan: totalTabungan,
+    saldoEfektif: totalPemasukan - totalPengeluaran - totalTabungan,
+    pemasukanBulanIni: pemasukanBulanIni,
+    pengeluaranBulanIni: pengeluaranBulanIni,
+    tabunganBulanIni: tabunganBulanIni
+  };
+}
+
+/**
+ * Mengambil 10 transaksi terakhir milik bersama (eksklusif Ival (Pribadi)).
+ */
+function getLastTransactions(n) {
+  n = n || 10;
+  const ss = getSpreadsheet();
+  const sheet = ss.getSheets()[0];
   const lastRow = sheet.getLastRow();
   if (lastRow <= 1) {
     return []; 
   }
 
-  const startRow = Math.max(2, lastRow - n + 1);
-  const numRows = lastRow - startRow + 1;
-
-  // Kolom A sampai H (8 kolom)
-  const range = sheet.getRange(startRow, 1, numRows, 8);
+  const range = sheet.getRange(2, 1, lastRow - 1, 8);
   const values = range.getValues();
-
   const transactions = [];
+
   for (let i = values.length - 1; i >= 0; i--) {
     const row = values[i];
-    
-    // Lewati baris jika Nama (Kolom B) dan Jenis Transaksi (Kolom C) kosong
     if (!row[1] && !row[2]) {
       continue;
     }
+
+    const nama = String(row[1]);
     
-    // Konversi objek Tanggal ke format DD/MM/YYYY agar seragam
+    // Eksklusi transaksi pribadi dari history aplikasi bersama
+    if (nama === "Ival (Pribadi)") {
+      continue;
+    }
+
     let tglStr = "";
     if (row[0]) {
       if (row[0] instanceof Date) {
-        // Format tanggal sesuai timezone spreadsheet
         tglStr = Utilities.formatDate(row[0], ss.getSpreadsheetTimeZone(), "dd/MM/yyyy");
       } else {
         tglStr = String(row[0]);
@@ -266,16 +350,97 @@ function getLastTransactions(n = 10) {
     }
 
     transactions.push({
-      tanggal: tglStr,                          // Kolom A
-      nama: row[1] ? String(row[1]) : "",       // Kolom B
-      jenis: row[2] ? String(row[2]) : "",      // Kolom C
-      kategori: row[3] ? String(row[3]) : "",   // Kolom D
-      nominal: Number(row[4]) || 0,             // Kolom E
-      catatan: row[5] ? String(row[5]) : ""     // Kolom F (Keterangan) kita jadikan sebagai catatan di UI
+      tanggal: tglStr,
+      nama: nama,
+      jenis: row[2] ? String(row[2]) : "",
+      kategori: row[3] ? String(row[3]) : "",
+      nominal: Number(row[4]) || 0,
+      catatan: row[5] ? String(row[5]) : "",
+      isShared: false
     });
+
+    if (transactions.length >= n) {
+      break;
+    }
   }
 
   return transactions;
+}
+
+/**
+ * Mengambil 10 transaksi terakhir milik Ival (gabungan Bersama & Pribadi, minus Tabungan Bersama).
+ */
+function getPersonalTransactions(n) {
+  n = n || 10;
+  const ss = getSpreadsheet();
+  const sheet = ss.getSheets()[0];
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) {
+    return [];
+  }
+
+  const range = sheet.getRange(2, 1, lastRow - 1, 8);
+  const values = range.getValues();
+  const transactions = [];
+
+  for (let i = values.length - 1; i >= 0; i--) {
+    const row = values[i];
+    if (!row[1] && !row[2]) {
+      continue;
+    }
+
+    const nama = String(row[1]);
+    const jenis = String(row[2]);
+
+    const isIvalShared = (nama === "Ival");
+    const isIvalPersonal = (nama === "Ival (Pribadi)");
+
+    if (!isIvalShared && !isIvalPersonal) {
+      continue;
+    }
+
+    // Eksklusi Tabungan Bersama
+    if (jenis === "Tabungan" && isIvalShared) {
+      continue;
+    }
+
+    let tglStr = "";
+    if (row[0]) {
+      if (row[0] instanceof Date) {
+        tglStr = Utilities.formatDate(row[0], ss.getSpreadsheetTimeZone(), "dd/MM/yyyy");
+      } else {
+        tglStr = String(row[0]);
+      }
+    }
+
+    transactions.push({
+      tanggal: tglStr,
+      nama: nama,
+      jenis: jenis,
+      kategori: row[3] ? String(row[3]) : "",
+      nominal: Number(row[4]) || 0,
+      catatan: row[5] ? String(row[5]) : "",
+      isShared: isIvalShared
+    });
+
+    if (transactions.length >= n) {
+      break;
+    }
+  }
+
+  return transactions;
+}
+
+/**
+ * Helper untuk parsing tanggal format DD/MM/YYYY ke objek Date
+ */
+function parseDateStr(str) {
+  if (!str) return new Date(0);
+  var parts = String(str).split("/");
+  if (parts.length === 3) {
+    return new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+  }
+  return new Date(str);
 }
 
 /**
@@ -313,17 +478,17 @@ function createJsonResponse(data) {
 
 /**
  * Membuat menu kustom di Google Sheets saat dokumen dibuka.
- * Menu ini memudahkan Anda melakukan setup struktur kolom dan rumus secara otomatis.
  */
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
   ui.createMenu("OurFinance")
-    .addItem("Setup Spreadsheet (Rumus & Header)", "setupSpreadsheet")
+    .addItem("Setup Spreadsheet (Rumus & Header Baru)", "setupSpreadsheet")
     .addToUi();
 }
 
 /**
- * Menyiapkan struktur header, label, dan rumus formula secara otomatis di Google Sheets.
+ * Menyiapkan struktur header, label, dan rumus formula secara otomatis di Google Sheets Utama.
+ * Rumus menggunakan SUMIFS dan SUMPRODUCT untuk mengeksklusi transaksi pribadi (Nama = "Ival (Pribadi)").
  */
 function setupSpreadsheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -353,10 +518,10 @@ function setupSpreadsheet() {
   sheet.getRange("J4").setValue("Total Tabungan");
   sheet.getRange("J5").setValue("Saldo Efektif");
   
-  // Tulis rumus metrik keseluruhan di K2:K5 (menggunakan standar locale Indonesia dengan titik koma ';')
-  sheet.getRange("K2").setFormula('=SUMIF(C:C; "Pemasukan"; E:E)');
-  sheet.getRange("K3").setFormula('=SUMIF(C:C; "Pengeluaran"; E:E)');
-  sheet.getRange("K4").setFormula('=SUMIF(C:C; "Tabungan"; E:E)');
+  // Tulis rumus metrik keseluruhan di K2:K5 (Menggunakan SUMIFS untuk mengeksklusi nama yang mengandung "Pribadi")
+  sheet.getRange("K2").setFormula('=SUMIFS(E:E; C:C; "Pemasukan"; B:B; "<>*Pribadi*")');
+  sheet.getRange("K3").setFormula('=SUMIFS(E:E; C:C; "Pengeluaran"; B:B; "<>*Pribadi*")');
+  sheet.getRange("K4").setFormula('=SUMIFS(E:E; C:C; "Tabungan"; B:B; "<>*Pribadi*")');
   sheet.getRange("K5").setFormula('=K2-K3-K4');
   
   // 3. Tulis Header Metrik Bulanan di M1:N1
@@ -372,16 +537,16 @@ function setupSpreadsheet() {
   sheet.getRange("M7").setValue("Pemasukan Ival Bulan Ini");
   sheet.getRange("M8").setValue("Pemasukan Nurul Bulan Ini");
   
-  // Tulis rumus metrik bulanan di N2:N8
-  sheet.getRange("N2").setFormula('=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A; 4; 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A; 4))=YEAR(TODAY())) * (C2:C="Pemasukan") * (E2:E))');
-  sheet.getRange("N3").setFormula('=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A; 4; 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A; 4))=YEAR(TODAY())) * (C2:C="Pengeluaran") * (E2:E))');
-  sheet.getRange("N4").setFormula('=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A; 4; 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A; 4))=YEAR(TODAY())) * (C2:C="Tabungan") * (E2:E))');
+  // Tulis rumus metrik bulanan di N2:N8 (Mengeksklusi Ival (Pribadi))
+  sheet.getRange("N2").setFormula('=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A; 4; 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A; 4))=YEAR(TODAY())) * (C2:C="Pemasukan") * (B2:B<>"Ival (Pribadi)") * (E2:E))');
+  sheet.getRange("N3").setFormula('=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A; 4; 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A; 4))=YEAR(TODAY())) * (C2:C="Pengeluaran") * (B2:B<>"Ival (Pribadi)") * (E2:E))');
+  sheet.getRange("N4").setFormula('=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A; 4; 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A; 4))=YEAR(TODAY())) * (C2:C="Tabungan") * (B2:B<>"Ival (Pribadi)") * (E2:E))');
   sheet.getRange("N5").setFormula('=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A; 4; 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A; 4))=YEAR(TODAY())) * (C2:C="Pengeluaran") * (B2:B="Ival") * (E2:E))');
   sheet.getRange("N6").setFormula('=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A; 4; 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A; 4))=YEAR(TODAY())) * (C2:C="Pengeluaran") * (B2:B="Nurul") * (E2:E))');
   sheet.getRange("N7").setFormula('=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A; 4; 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A; 4))=YEAR(TODAY())) * (C2:C="Pemasukan") * (B2:B="Ival") * (E2:E))');
   sheet.getRange("N8").setFormula('=SUMPRODUCT((A2:A<>"") * (VALUE(MID(A2:A; 4; 2))=MONTH(TODAY())) * (VALUE(RIGHT(A2:A; 4))=YEAR(TODAY())) * (C2:C="Pemasukan") * (B2:B="Nurul") * (E2:E))');
   
-  // Atur format nominal agar mudah dibaca di Sheet (K2:K5 dan N2:N8) sebagai Rupiah
+  // Atur format nominal Rupiah
   sheet.getRange("K2:K5").setNumberFormat('"Rp"#,##0');
   sheet.getRange("N2:N8").setNumberFormat('"Rp"#,##0');
   
@@ -390,7 +555,7 @@ function setupSpreadsheet() {
   sheet.autoResizeColumns(10, 2);
   sheet.autoResizeColumns(13, 2);
   
-  SpreadsheetApp.getUi().alert("Setup Selesai! Rumus, header, dan label metrik telah otomatis ditulis ke Google Sheets Anda.");
+  SpreadsheetApp.getUi().alert("Setup Selesai! Rumus, header, dan label metrik telah otomatis diperbarui di Google Sheets Anda.");
 }
 
 /**
@@ -405,4 +570,3 @@ function getNextTransactionRow(sheet) {
   }
   return values.length + 1;
 }
-
